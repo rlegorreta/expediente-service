@@ -75,11 +75,7 @@ spring:
 security:
   clientId: expediente-service
 
-#Back-end microservices
-microservice:
-  param:
-    provider-uri: http://localhost:8072/param           # use the gateway
-    # provider-uri: http://param-service:8350             # no use gateway, because is backoffice microservice communication
+#Back-end microservices (none)
 
 # Alfresco content management server
 alfresco:
