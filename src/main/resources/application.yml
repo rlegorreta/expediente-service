@@ -1,5 +1,5 @@
 server:
-  port: 8521
+  port: 8525
   shutdown: graceful
   netty:
     connection-timeout: 2s
