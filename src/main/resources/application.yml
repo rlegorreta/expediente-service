@@ -1,0 +1,131 @@
+server:
+  port: 8521
+  shutdown: graceful
+  netty:
+    connection-timeout: 2s
+    idle-timeout: 15s
+
+spring:
+  application:
+    name: expediente-service
+  lifecycle:
+    timeout-per-shutdown-phase: 15s
+  config:
+    import: "optional:configserver:"   # Imports configuration data from a config server when available
+  cloud:
+    config:
+      uri: http://localhost:8071
+      request-connect-timeout: 5000   # Timeout on waiting to connect to the config server (ms)
+      request-read-timeout: 5000      # Timeout on waiting to read configuration data from the config server (ms)
+      fail-fast: true                 # In production, set to true. Makes a failure to connect to the config server fatal
+      retry:
+        max-attempts: 6
+        initial-interval: 1000        # Initial retry interval for backoff (ms)
+        max-interval: 2000            # Maximum retry interval for backoff (ms)
+        multiplier: 1.1               # Multiplier to compute the next interval
+    loadbalancer:
+      ribbon:
+        enabled: false
+    function:
+      definition: zeebeClient;notify
+    stream:
+      default:
+        producer:
+          useNativeEncoding: true
+        consumer:
+          useNativeDecoding: true
+      function:
+        definition: notify
+      kafka:
+        binder:
+          brokers: http://localhost:9092
+        bindings:
+          notify-out-0:
+            producer:
+              configuration:
+                key.serializer: org.apache.kafka.common.serialization.StringSerializer
+                value.serializer: com.ailegorreta.commons.event.EventDTOSerializer
+      bindings:
+        notify-out-0:
+          destination: notify
+  profiles:
+    active: local
+  security:
+    oauth2:
+      client:
+        registration:
+          expediente-service-client-credentials:
+            provider: spring
+            client-id: expediente-service
+            client-secret: expediente-service-secret
+            authorization-grant-type: client_credentials
+            scope: acme.facultad
+            client-name: expediente-service-client-credentials
+        provider:
+          spring:
+            issuer-uri: http://auth-service:9000
+            # ^ for localNoDocker & localCmdLine an 'auth' must be declared in hosts file
+        rest:
+          client-id: expediente-service-client-credentials
+      resourceserver:
+        jwt:
+          issuer-uri: http://auth-service:9000
+
+# Also needed by AuthServerUserLookupService
+security:
+  clientId: expediente-service
+
+#Back-end microservices
+microservice:
+  param:
+    provider-uri: http://localhost:8072/param           # use the gateway
+    # provider-uri: http://param-service:8350             # no use gateway, because is backoffice microservice communication
+
+# Alfresco content management server
+alfresco:
+  url: http://localhost:8080/alfresco/api/-default-/cmis/versions/1.1/atom
+  # url: http://host.docker.internal:8080/alfresco/api/-default-/cmis/versions/1.1/atom
+  username: uname
+  password: password
+  company: ACME     # This is the parent folder for all files
+
+# BPM Camunda gateway
+zeebe:
+  client:
+    broker:
+      gateway-address: localhost:26500
+    security:
+      plaintext: true
+
+logging:
+  level:
+    com:
+      netflix: WARN
+      springframework:
+        web: WARN
+        core:
+          codec:
+            StringDecoder: TRACE
+      acme:
+        expedienteservice: INFO
+  pattern:
+    level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]'
+
+info:
+  system: Marketplace AILegorreta
+
+# Monitoring with actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: expediente, env, health, heapdump, info, loggers, mappings, prometheus
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+
+expediente-service:
+  test: false

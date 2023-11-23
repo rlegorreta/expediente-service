@@ -1,0 +1,31 @@
+expediente-service:
+  testing: true
+
+eureka:
+  client:
+    enabled: false
+    registerWithEureka: false
+  serviceUrl:
+    fetchRegistry: false
+
+logging:
+  level:
+    root: INFO
+    com:
+      acme:
+        expedienteservice: DEBUG
+    io:
+      camunda:
+        zeebe:
+          client:
+            job:
+              worker: ERROR         # This level is because we don´t want to show the Metrics WARN log message that
+                                    # the Metrics bean does not exist
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+management:
+  endpoint:
+    metrics:
+      enabled: false                # This does not work so we need to disabled auto-configuration (to problematic)
